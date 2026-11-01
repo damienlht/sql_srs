@@ -3,6 +3,7 @@ import pandas as pd
 import duckdb
 import io
 from click import option
+
 csv ='''
 beverage,price
 orange juice,2.5
@@ -25,6 +26,12 @@ SELECT * FROM beverages
          """
 
 solution = duckdb.sql(answer).df()
+
+st.write("SQL test")
+with st.sidebar:
+    option = st.selectbox("What do you want to review", ("Join", "Group By", "Window func"), index=None,
+                          placeholder="Select a theme...")
+    st.write("You selected: ", option)
 
 st.header("enter your code:")
 query = st.text_area(label="votre sql",key="user_input")
