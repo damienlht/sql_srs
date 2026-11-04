@@ -1,0 +1,1 @@
+select * FROM beverages CROSS JOIN food_items
