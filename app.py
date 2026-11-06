@@ -2,6 +2,7 @@ import duckdb
 import streamlit as st
 import os
 import logging
+from datetime import date, timedelta
 import ast
 from click import option
 if "data" not in os.listdir():
@@ -55,16 +56,25 @@ with st.sidebar:
 
 st.header("enter your code:")
 query = st.text_area(label="votre sql", key="user_input")
-if query:
-    result = con.execute(query).df()
+
+
+def check_user_solution(user_query: str) -> None:
+    """
+    Check user query function
+    """
+
+    result = con.execute(user_query).df()
     st.dataframe(result)
-# #
-#     if len(result.columns) != len(solution_df.columns):
-#         st.write("Some columns are missing")
+    # #
+    #     if len(result.columns) != len(solution_df.columns):
+    #         st.write("Some columns are missing")
 
     try:
         result = result[solution_df.columns]
         st.dataframe(result.compare(solution_df))
+        if result.compare(solution_df).shape==(0,0):
+            st.write("Correct !")
+            st.balloons()
     except KeyError as e:
         st.write("Some columns are missing")
 
@@ -73,8 +83,20 @@ if query:
         st.write(
             f"result has a {n_lines_difference} lines difference with the solution_df"
         )
+
+
+if query:
+    check_user_solution(query)
     # st.dataframe(result.compare(solution_df))
 #
+for n_days in [2,7,21]:
+    if st.button(f'Revoir dan {n_days} jours'):
+        next_review=date.today() + timedelta(days=n_days)
+        con.execute(f"UPDATE memory_state SET last_reviewed = '{next_review}' WHERE exercise_name = '{exercise_name}'")
+        st.rerun()
+if st.button ('Reset'):
+    con.execute(f"UPDATE memory_state SET last_reviewed = '1970-0-01'")
+    st.rerun()
 tab2, tab3 = st.tabs(["Tables", "Solution"])
 #
 with tab2:
