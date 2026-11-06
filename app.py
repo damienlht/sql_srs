@@ -20,9 +20,12 @@ con = duckdb.connect(database="data/exercises_sql_tables.duckdb",read_only=False
 
 #st.write("SQL test")
 with st.sidebar:
+    available_themes_df=con.execute("SELECT DISTINCT Theme from memory_state").df()
+    #st.dataframe(available_themes_df["theme"].unique())
+    # st.write(available_themes)
     theme = st.selectbox(
         "What do you want to review",
-        ("cross_joins", "Group By", "Window func"),
+        available_themes_df["theme"].unique(),
         index=None,
         placeholder="Select a theme...",
     )
