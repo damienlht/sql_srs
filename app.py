@@ -1,50 +1,49 @@
-import io
 import duckdb
-import pandas as pd
 import streamlit as st
+import os
+import logging
+import ast
 from click import option
+if "data" not in os.listdir():
+    print("creating folder data")
+    logging.error(os.listdir())
+    logging.error("creating folder data")
+    os.mkdir("data")
 
-CSV = """
-beverage,price
-orange juice,2.5
-expresso,2
-Tea,3
-"""
-beverages = pd.read_csv(io.StringIO(CSV))
-CSV2 = """
-food_item,food_price
-cookie  juice,2.5
-pain_choc,2
-Muffin,3
-"""
-food_items = pd.read_csv(io.StringIO(CSV2))
+if "exercises_sql_tables.duckdb" not in os.listdir("data"):
+    exec(open("init_db.py").read())
+con = duckdb.connect(database="data/exercises_sql_tables.duckdb",read_only=False)
 
 
-ANSWER_STR = """
-SELECT * FROM beverages
-         CROSS JOIN food_items
-         """
+# ANSWER_STR = """SELECT * FROM beverages     CROSS JOIN food_items"""
+#
 
-solution_df = duckdb.sql(ANSWER_STR).df()
-
-st.write("SQL test")
+#st.write("SQL test")
 with st.sidebar:
-    option = st.selectbox(
+    theme = st.selectbox(
         "What do you want to review",
-        ("Join", "Group By", "Window func"),
+        ("cross_joins", "Group By", "Window func"),
         index=None,
         placeholder="Select a theme...",
     )
-    st.write("You selected: ", option)
+    st.write("You selected: ", theme)
+    exercise = con.execute(f"select * from memory_state where theme = '{theme}'").df().sort_values("last_reviewed").reset_index()
+    st.write(exercise)
+
+    exercise_name= exercise.loc[0, "exercise_name"]
+    with open(f"answers/{exercise_name}.sql","r") as f:
+        answer  = f.read()
+
+    solution_df =  con.execute(answer).df()
 
 st.header("enter your code:")
 query = st.text_area(label="votre sql", key="user_input")
 if query:
-    result = duckdb.sql(query).df()
+    result = con.execute(query).df()
     st.dataframe(result)
-
-    if len(result.columns) != len(solution_df.columns):
-        st.write("Some columns are missing")
+# #
+#     if len(result.columns) != len(solution_df.columns):
+#         st.write("Some columns are missing")
 
     try:
         result = result[solution_df.columns]
@@ -58,16 +57,26 @@ if query:
             f"result has a {n_lines_difference} lines difference with the solution_df"
         )
     # st.dataframe(result.compare(solution_df))
-
+#
 tab2, tab3 = st.tabs(["Tables", "Solution"])
-
+#
 with tab2:
-    st.write("table: beverages")
-    st.dataframe(beverages)
-    st.write("table: food_items")
-    st.dataframe(food_items)
-    st.write("expected:")
-    st.dataframe(solution_df)
+    exercise_tables = exercise.loc[0, "tables"]
 
+    for table in exercise_tables:
+        st.write(f"table: {table}")
+        df_table=  con.execute(f"select * from '{table}'").df()
+        st.dataframe(df_table)
+
+
+#     st.dataframe(beverages)
+#     st.write("table: food_items")
+#     st.dataframe(food_items)
+#     st.write("expected:")
+#     st.dataframe(solution_df)
+#
 with tab3:
-    st.write(ANSWER_STR)
+    exercise_name= exercise.loc[0, "exercise_name"]
+    with open(f"answers/{exercise_name}.sql","r") as f:
+        answer  = f.read()
+    st.write(answer)
